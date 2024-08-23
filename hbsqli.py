@@ -1,5 +1,3 @@
-from ast import arg
-from math import e
 from socket import timeout
 from ssl import SSLError
 from urllib.error import URLError
@@ -67,7 +65,11 @@ def handle_vulnerability(url, header, res_time):
     print()
 
     # Save the vulnerable URL to the file
-    vulnerable_file.write(f"{url} - {header} - Response Time: {res_time}\n")
+    try:
+        vulnerable_file.write(f"{url} - {header} - Response Time: {res_time}\n")
+        vulnerable_file.flush()  # Ensure the data is written to the file immediately
+    except IOError as e:
+        console.print(f"[bold red]Error writing to file: {e}[/]")
 
     # If the approve flag is set, wait for user input to continue
     if args.approve:
@@ -80,7 +82,11 @@ def onfile():
         urls = [line.strip() for line in file]
 
     for url in urls:
+        skip_domain = False  # Flag to skip the entire domain on error
         for header in headers_dict:
+            if skip_domain:
+                break  # Skip remaining headers if domain has already encountered an error
+
             cust_header = {header.split(": ")[0]: header.split(": ")[1]}
             try:
                 with httpx.Client(timeout=60) as client:
@@ -90,10 +96,12 @@ def onfile():
                 if 25 <= res_time <= 50:
                     handle_vulnerability(url, header, res_time)
 
-            except (UnicodeDecodeError, AssertionError, TimeoutError, ConnectionRefusedError, SSLError, URLError, ConnectionResetError, httpx.RequestError) as e:
+            except (UnicodeDecodeError, AssertionError, TimeoutError, ConnectionRefusedError, SSLError, URLError, ConnectionResetError, httpx.RequestError, timeout) as e:
                 print(f"The request was not successful due to: {e}")
+                print(f"Skipping the entire domain {url} and moving to the next one...")
                 print()
-                pass
+                skip_domain = True  # Set flag to skip remaining headers for this domain
+                break  # Break the inner loop to move to the next domain
 
 # For File as an Input-Verbose
 def onfile_v():
@@ -102,7 +110,11 @@ def onfile_v():
         urls = [line.strip() for line in file]
 
     for url in urls:
+        skip_domain = False  # Flag to skip the entire domain on error
         for header in headers_dict:
+            if skip_domain:
+                break  # Skip remaining headers if domain has already encountered an error
+
             cust_header = {header.split(": ")[0]: header.split(": ")[1]}
             console.print("🌐 [bold][cyan]Testing for URL: [/][/]", url)
             console.print("💉 [bold][cyan]Testing for Header: [/][/]", repr(header))
@@ -119,10 +131,12 @@ def onfile_v():
                     console.print("🐞[bold][cyan]Status: [/][green]Not Vulnerable[/][/]")
                     print()
 
-            except (UnicodeDecodeError, AssertionError, TimeoutError, ConnectionRefusedError, SSLError, URLError, ConnectionResetError, httpx.RequestError) as e:
+            except (UnicodeDecodeError, AssertionError, TimeoutError, ConnectionRefusedError, SSLError, URLError, ConnectionResetError, httpx.RequestError, timeout) as e:
                 print(f"The request was not successful due to: {e}")
+                print(f"Skipping the entire domain {url} and moving to the next one...")
                 print()
-                pass
+                skip_domain = True  # Set flag to skip remaining headers for this domain
+                break  # Break the inner loop to move to the next domain
 
 # For URL as an Input
 def onurl():
@@ -139,10 +153,11 @@ def onurl():
             if 25 <= res_time <= 50:
                 handle_vulnerability(url, header, res_time)
 
-        except (UnicodeDecodeError, AssertionError, TimeoutError, ConnectionRefusedError, SSLError, URLError, ConnectionResetError, httpx.RequestError) as e:
+        except (UnicodeDecodeError, AssertionError, TimeoutError, ConnectionRefusedError, SSLError, URLError, ConnectionResetError, httpx.RequestError, timeout) as e:
             print(f"The request was not successful due to: {e}")
+            print(f"Skipping the entire domain {url} and moving to the next one...")
             print()
-            pass
+            break  # Break the loop to move to the next domain
 
 # For URL as an Input-Verbose
 def onurl_v():
@@ -166,10 +181,11 @@ def onurl_v():
                 console.print("🐞[bold][cyan]Status: [/][green]Not Vulnerable[/][/]")
                 print()
 
-        except (UnicodeDecodeError, AssertionError, TimeoutError, ConnectionRefusedError, SSLError, URLError, ConnectionResetError, httpx.RequestError) as e:
+        except (UnicodeDecodeError, AssertionError, TimeoutError, ConnectionRefusedError, SSLError, URLError, ConnectionResetError, httpx.RequestError, timeout) as e:
             print(f"The request was not successful due to: {e}")
+            print(f"Skipping the entire domain {url} and moving to the next one...")
             print()
-            pass
+            break  # Break the loop to move to the next domain
 
 if args.url is not None:
     if args.verbose:
