@@ -36,7 +36,7 @@ options:
   -H HEADERS, --headers HEADERS
                         To provide header file having HTTP Headers which are to be injected
   -v, --verbose         Run on verbose mode
-
+  -a, --approve         Pause and wait for approval if a vulnerability is found
 ```
 ### For Single URL:
 ```javascript
